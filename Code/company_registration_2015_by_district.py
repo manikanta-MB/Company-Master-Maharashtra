@@ -14,26 +14,27 @@ def map_pincode_to_district(filename):
     """It will create the dictionary that maps
     unique code(generated from pincode) to district
     """
+    districts = {}
     with open(filename,"r",encoding="utf8") as file_obj:
-        reader = csv.reader(file_obj)
-        next(reader,None)
-        for row in reader:
-            code = row[0].strip()[:4]
-            district = row[1].strip()
+        district_reader = csv.DictReader(file_obj)
+        for current_district_info in district_reader:
+            code = current_district_info["Pin Code"].strip()[:4]
+            district = current_district_info["District"].strip()
             districts[code] = district
+    return districts
 
-def map_district_to_registration_count(filename):
+def map_district_to_registration_count(filename,districts):
     """It will create the dictionary that maps district to registration count"""
+    registrations_by_district = {}
     with open(filename,"r",encoding = "ISO-8859-1") as file_obj:
-        reader = csv.reader(file_obj)
-        next(reader,None)
-        for row in reader:
+        company_registration_reader = csv.DictReader(file_obj)
+        for current_registration_info in company_registration_reader:
             try:
-                date,_,year = row[6].strip().split('-')
-                if(len(date)!=4 and year=="15"):
-                    address = row[12].strip()
+                date,_,year = current_registration_info["DATE_OF_REGISTRATION"].strip().split('-')
+                if len(date)!=4 and year=="15":
+                    address = current_registration_info["Registered_Office_Address"].strip()
                     pincode = address.rpartition(' ')[-1]
-                    if(pincode.isdigit() and len(pincode)==6):
+                    if pincode.isdigit() and len(pincode)==6:
                         district_code = pincode[:4]
                         if district_code in districts:
                             district = districts[district_code]
@@ -41,8 +42,8 @@ def map_district_to_registration_count(filename):
                             registrations_by_district[district] = count
             except ValueError:
                 pass
-
-def plot_data():
+    return registrations_by_district
+def plot_data(registrations_by_district):
     """It will create and display the bar chart"""
 
     # preparing x-axis and y-axis values.
@@ -63,8 +64,12 @@ def plot_data():
     plt.xlabel("Number of Registrations",fontweight='bold')
     plt.show()
 
-districts = {}
-registrations_by_district={}
-map_pincode_to_district(os.getcwd()+"/../Data/zipcode_district.csv")
-map_district_to_registration_count(os.getcwd()+"/../Data/Maharashtra.csv")
-plot_data()
+def execute():
+    """It will call all the helper functions to achieve our aim"""
+    file_path = os.getcwd()+"/../Data/zipcode_district.csv"
+    districts = map_pincode_to_district(file_path)
+    file_path = os.getcwd()+"/../Data/Maharashtra.csv"
+    registrations_by_district = map_district_to_registration_count(file_path,districts)
+    plot_data(registrations_by_district)
+
+execute()
